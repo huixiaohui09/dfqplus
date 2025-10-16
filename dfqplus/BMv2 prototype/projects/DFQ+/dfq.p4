@@ -2,13 +2,15 @@
 #include <core.p4>
 #include <v1model.p4>
 
-const bit<16> TYPE_IPV4 = 0x800;
-const bit<8>  PROTOCOL_ICMP = 1;
+const bit<16> TYPE_IPV4       = 0x800;
+const bit<8>  PROTOCOL_ICMP   = 1;
+const bit<8>  PROTOCOL_TCP    = 6;
+const bit<8>  PROTOCOL_UDP    = 17;
 
 /************** Queue / Window Parameters **************/
 const int     NUM_QUEUES = 5;                 // Number of logical (virtual) queues
-const bit<32> QUEUE_CAPACITY = 256;           // Capacity per queue (packets/slots)
-const bit<32> SLOT_BYTES = 1500;              // Bytes per slot (for byte-level prefix comparison)
+const bit<32> QUEUE_CAPACITY = 256;           // Capacity per queue
+const bit<32> SLOT_BYTES = 1500;              // Bytes per slot 
 const int     WINDOW_W = 32;                  // Ring buffer size (maintain W8/W16/W32 in parallel)
 const bit<32> AUX_QID = 4;                    // Reserved auxiliary queue qid
 const bit<32> SPLIT_MIN_CHUNK = 1;            // Minimum transferable capacity (packets)
@@ -20,6 +22,7 @@ typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
 
+/*** L2/L3/L4 headers ***/
 header ethernet_t {
     macAddr_t dstAddr;
     macAddr_t srcAddr;
@@ -42,16 +45,36 @@ header ipv4_t {
 }
 
 header icmp_t {
-    bit<8> type;
-    bit<8> code;
+    bit<8>  type;
+    bit<8>  code;
+    bit<16> checksum;
+}
+
+header tcp_t {
+    bit<16> srcPort;
+    bit<16> dstPort;
+    bit<32> seqNo;
+    bit<32> ackNo;
+    bit<4>  dataOffset;
+    bit<3>  reserved;
+    bit<9>  flags;
+    bit<16> window;
+    bit<16> checksum;
+    bit<16> urgentPtr;
+}
+
+header udp_t {
+    bit<16> srcPort;
+    bit<16> dstPort;
+    bit<16> length_;
     bit<16> checksum;
 }
 
 struct metadata {
-    bit<8>  flow_id;
-    bit<8>  queue_id;        
+    bit<8>  flow_id;      
+    bit<8>  queue_id;
     bit<1>  can_enqueue;
-    bit<32> packet_size;    
+    bit<32> packet_size;
     bit<1>  should_drop;
     bit<1>  queue_empty;
 
@@ -64,14 +87,16 @@ struct metadata {
     bit<32> round_r;
     bit<32> omega_r;
 
-    bit<5>  cur_qid;       
-    bit<19> left19;         
+    bit<5>  cur_qid;
+    bit<19> left19;
 }
 
 struct headers {
     ethernet_t ethernet;
     ipv4_t     ipv4;
     icmp_t     icmp;
+    tcp_t      tcp;
+    udp_t      udp;
 }
 
 /************** Registers **************/
@@ -134,11 +159,15 @@ parser MyParser(packet_in packet,
         meta.queue_empty = 0;
         transition select(hdr.ipv4.protocol) {
             PROTOCOL_ICMP: parse_icmp;
+            PROTOCOL_TCP:  parse_tcp;
+            PROTOCOL_UDP:  parse_udp;
             default: accept;
         }
     }
 
     state parse_icmp { packet.extract(hdr.icmp); transition accept; }
+    state parse_tcp  { packet.extract(hdr.tcp);  transition accept; }
+    state parse_udp  { packet.extract(hdr.udp);  transition accept; }
 }
 
 /************** Ingress **************/
@@ -148,10 +177,26 @@ control MyIngress(inout headers hdr,
 
     action drop_action() { mark_to_drop(standard_metadata); }
 
-    action set_flow_id() {
-        bit<6> dscp = (bit<6>)(hdr.ipv4.diffserv >> 2);
-        meta.flow_id = (bit<8>)(dscp & 0x1F);
-    }
+    /*** Flow-ID by 5-tuple hash (src/dst IP, ports, protocol) ***/
+    action set_flow_id_5tuple() {
+        bit<16> sp = 0;
+        bit<16> dp = 0;
+
+        if (hdr.tcp.isValid()) {
+            sp = hdr.tcp.srcPort;
+            dp = hdr.tcp.dstPort;
+        } else if (hdr.udp.isValid()) {
+            sp = hdr.udp.srcPort;
+            dp = hdr.udp.dstPort;
+        } else {
+            sp = 0; dp = 0;
+        }
+        
+        bit<32> h;
+        hash(h, HashAlgorithm.crc32, (bit<32>)0,{ 
+            hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, sp, dp, hdr.ipv4.protocol }, (bit<32>)256);               
+            meta.flow_id = (bit<8>) h;        
+        }
 
     /* Initialization: if not initialized, write defaults; otherwise keep current values */
     action maybe_init_defaults() {
@@ -611,9 +656,9 @@ control MyIngress(inout headers hdr,
     }
 
     apply {
-        if (hdr.ipv4.isValid() && hdr.icmp.isValid() && hdr.icmp.type == 8) {
+        if (hdr.ipv4.isValid() && (hdr.icmp.isValid() || hdr.tcp.isValid() || hdr.udp.isValid())) {
             maybe_init_defaults();
-            set_flow_id();
+            set_flow_id_5tuple();
 
             if (ipv4_lpm.apply().hit) {
                 update_multi_windows();        // O(1) update for W8/W16/W32 window sums
@@ -767,6 +812,8 @@ control MyDeparser(packet_out packet, in headers hdr) {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.ipv4);
         packet.emit(hdr.icmp);
+        packet.emit(hdr.tcp);
+        packet.emit(hdr.udp); 
     }
 }
 
