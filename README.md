@@ -2,42 +2,95 @@
 
 DFQ+ is a dynamic fair queuing mechanism that uses a small number of priority queues to achieve both high utilization and fair bandwidth allocation.
 
+---
+
+## Repository Contents
+
 This repository provides:
 
-- A **P4 implementation** of DFQ+ on [**BMv2**](https://github.com/p4lang/behavioral-model).
-- **Mininet** scripts to evaluate DFQ+.
-- A patch enabling **multi-priority queues** and **Rotating Strict Priority (RSP)** scheduling on BMv2 (compatible with [A2FQ](https://github.com/ants-xjtu/a2fq)).
+-  A **P4 implementation** of DFQ+ on **BMv2**
+-  **Mininet scripts** to evaluate DFQ+
+-  A **patch** enabling **multi-priority queues** and **Rotating Strict Priority (RSP)** scheduling on BMv2 (following the [**A2FQ**](https://github.com/ants-xjtu/a2fq) model)
+
+---
 
 ## Prerequisites
 
-- Ubuntu 20.04/22.04 (recommended) or the official **P4 tutorials VM**
-- `git`, `build-essential`, `cmake`, `python3`, `python3-pip`
-- **p4c** (P4 compiler)
-- **BMv2** (behavioral-model) with `simple_switch`
-- **Mininet**
-- `iperf` / `iperf3`
+### Supported Operating Systems
 
-If you are new to P4, the easiest path is using the tutorials VM or following the official setup guide:  
-<https://github.com/p4lang/tutorials#to-build-the-virtual-machine>
+- **Ubuntu 20.04 / 22.04** (recommended)
+- **P4 Tutorials VM** (official image)
+- **WSL2 on Windows** is suitable for development, but **BMv2 + Mininet is recommended on a Linux host/VM**
 
-## Quick Start (already have p4c + BMv2)
+---
 
-> If `p4c` and `simple_switch` are already installed on your system:
+### Core Toolchain
+
+| Requirement     | Versions / Tools                   |
+|----------------|------------------------------------|
+| Build tools     | `git`, `build-essential`, `cmake`, `pkg-config` |
+| Python          | `Python 3.8+`, `python3-pip`       |
+| Network Testing | `iperf3` (or `iperf`), `tcpdump` *(optional)* |
+
+---
+
+### P4 Toolchain
+
+| Component          | Description |
+|-------------------|-------------|
+| `p4c`             | P4-16 Compiler (v1model backend) |
+| `BMv2`            | behavioral-model with `simple_switch` and `simple_switch_CLI` |
+| `Mininet`         | Version ≥ 2.3 |
+
+---
+
+### Java / NetBench
+
+| Requirement | Recommended |
+|-------------|-------------|
+| JDK         | 11+ (Java 17 preferred) |
+| Build Tool  | Maven 3.8+ or Gradle 7+ |
+
+---
+
+## Quick Version Check
+
+Run the following commands to verify your environment:
 
 ```bash
-# 1) Apply the patch (adjust paths to your environment)
-# Replace p4c's v1model
-sudo cp patch/final/p4include/v1model.p4 \
-    "$(p4c --print-include-dir)/v1model.p4"
+p4c --version
+simple_switch --version 2>/dev/null || which simple_switch
+simple_switch_CLI --version 2>/dev/null || which simple_switch_CLI
+mn --version
+python3 --version
+java -version
+mvn -v   # if using Maven
+```
 
-# Copy patched BMv2 sources into your BMv2 source tree, then rebuild
-cp patch/final/simple_switch/*  ~/behavioral-model/targets/simple_switch/
+## Environment Setup: Use the P4 Tutorials VM
+
+If you are new to P4, the easiest way to get started is by using the **P4 Tutorials VM** or following the official setup guide:
+
+🔗 [https://github.com/p4lang/tutorials#to-build-the-virtual-machine](https://github.com/p4lang/tutorials#to-build-the-virtual-machine)
+
+---
+
+## Quick Start (Already Have `p4c` + BMv2 Installed)
+
+If `p4c` and `simple_switch` are already installed on your system, follow these steps:
+
+1) Apply the patch to enable Multi-priority queues and RSP scheduling
+```bash
+cp patch/final/p4include/v1model.p4 /usr/local/share/p4c/p4include/
+cp patch/final/simple_switch/* <bmv2_src_dir>/targets/simple_switch/
+
 cd ~/behavioral-model
 make -j"$(nproc)"
 sudo make install
 sudo ldconfig
-
-# 2) Run DFQ+ demo topology
+```
+ 2) Run DFQ+
+```bash
 cd projects/DFQ+/
 sudo python3 topo.py
-
+```
