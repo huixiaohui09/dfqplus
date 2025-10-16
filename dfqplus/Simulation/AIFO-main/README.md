@@ -34,11 +34,12 @@ mvn clean compile assembly:single
 
 #### 4. Running
 
-1. Quick Start:
+1. Quick start:
 
    ```
    java -jar -ea NetBench.jar 13
    ```
 
 2. After the run, the log files are saved in the `./temp/aifo/aifo_evaluation` folder
+
 
