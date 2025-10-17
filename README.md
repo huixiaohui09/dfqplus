@@ -8,7 +8,7 @@ DFQ+ is a dynamic fair queuing mechanism that uses a small number of priority qu
 
 This repository provides:
 
--  A **P4 implementation** of DFQ+ on **BMv2**
+-  A **P4 implementation** of DFQ+ on [**BMv2**](https://github.com/p4lang/behavioral-model)
 -  **Mininet scripts** to evaluate DFQ+
 -  A **patch** enabling **multi-priority queues** and **Rotating Strict Priority (RSP)** scheduling on BMv2 (following the [**A2FQ**](https://github.com/ants-xjtu/a2fq) model)
 
