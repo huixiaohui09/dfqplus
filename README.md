@@ -81,8 +81,8 @@ If `p4c` and `simple_switch` are already installed on your system, follow these 
 
 1) Apply the patch to enable Multi-priority queues and RSP scheduling
 ```bash
-cp dfqplus/BMv2 prototype/patch/final/p4include/v1model.p4 /usr/local/share/p4c/p4include/
-cp dfqplus/BMv2 prototype/patch/final/simple_switch/* <bmv2_src_dir>/targets/simple_switch/
+cp "dfqplus/BMv2 prototype/patch/final/p4include/v1model.p4" /usr/local/share/p4c/p4include/
+cp "dfqplus/BMv2 prototype/patch/final/simple_switch/"* ~/behavioral-model/targets/simple_switch/
 
 cd ~/behavioral-model
 ./autogen.sh
@@ -92,6 +92,6 @@ sudo make install
 ```
  2) Run DFQ+
 ```bash
-cd dfqplus/BMv2 prototype/projects/DFQ+
+cd "dfqplus/BMv2 prototype/projects/DFQ+"
 sudo ./run_iperf_experiment.sh
 ```
