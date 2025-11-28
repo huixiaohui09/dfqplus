@@ -8,7 +8,7 @@
 
 
 
-### 2. Software structure
+#### 2. Software structure
 
 There are three sub-packages in [*netbench*](https://github.com/nsg-ethz/sp-pifo): (a) core, containing core functionality, (b) ext (extension), which contains functionality implemented and quite thoroughly tested, and (c) xpt (experimental), which contains functionality not yet as thoroughly tested but reasonably vetted and assumed to be correct for the usecase it was written for.
 
@@ -29,17 +29,45 @@ More information about the framework can be found in the thesis located at [http
 Build the executable `NetBench.jar` by using the following maven command: 
 
 ```
+cd dfqplus/Simulation/AIFO-main/aifo_simulation/java-code
 mvn clean compile assembly:single
 ```
 
 #### 4. Running
-
-1. Quick start:
-
+1.
    ```
-   java -jar -ea NetBench.jar 13
+   java -jar -ea NetBench.jar 6
    ```
+After the run, the log files are saved in the `dfqplus/Simulation/AIFO-main/aifo_simulation/java-code/temp/aifo/aifo_evaluation/fairness/window_size` folder. The corresponding results are presented in Figure 6.
 
-2. After the run, the log files are saved in the `./temp/aifo/aifo_evaluation` folder
+2.
+   ```
+   java -jar -ea NetBench.jar 7
+   ```
+After the run, the log files are saved in the `dfqplus/Simulation/AIFO-main/aifo_simulation/java-code/temp/aifo/aifo_evaluation/fairness/web_search_workload` folder. The corresponding results are shown in Figures 7, 9, 10, 11, and 12, and Table 2.
+
+3.
+   ```
+   java -jar -ea NetBench.jar 8
+   ```
+After the run, the log files are saved in the `dfqplus/Simulation/AIFO-main/aifo_simulation/java-code/temp/aifo/aifo_evaluation/fairness/data_mining_workload` folder. The corresponding results are presented in Figure 8.
+
+4.
+   ```
+   java -jar -ea NetBench.jar 100
+   ```
+After the run, the log files are saved in the `dfqplus/Simulation/AIFO-main/aifo_simulation/java-code/temp/aifo/aifo_evaluation/fairness/different_topology` folder. The corresponding results are presented in Tables 3 and 4.
+
+5.
+   ```
+   java -jar -ea NetBench.jar 18
+   ```
+After the run, the log files are saved in the `dfqplus/Simulation/AIFO-main/aifo_simulation/java-code/temp/aifo/aifo_evaluation/fairness/burst` folder. The corresponding results are presented in Figure 18.
+
+6. For the ablation experiments, modify the `DFQQueue.java` file in `dfqplus/Simulation/AIFO-main/aifo_simulation/java-code/src/main/java/ch/ethz/systems/netbench/xpt/aifo/ports/DFQ`, which contains the three versions of our DFQ implementation. Then, edit `MainFigure7.java` in `aifo_simulation/java-code/src/main/java/ch/ethz/systems/netbench/core/run` by commenting out all other algorithms and keeping only the DFQ execution code. Finally, run:
+```bash
+java -jar -ea NetBench.jar 7
+```
+and analyze the results.
 
 
