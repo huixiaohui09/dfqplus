@@ -85,9 +85,10 @@ cp dfqplus/BMv2 prototype/patch/final/p4include/v1model.p4 /usr/local/share/p4c/
 cp dfqplus/BMv2 prototype/patch/final/simple_switch/* <bmv2_src_dir>/targets/simple_switch/
 
 cd ~/behavioral-model
+./autogen.sh
+./configure
 make -j"$(nproc)"
 sudo make install
-sudo ldconfig
 ```
  2) Run DFQ+
 ```bash
