@@ -1,0 +1,3 @@
+gen-cpp/bm/simple_switch_constants.lo: \
+ gen-cpp/bm/simple_switch_constants.cpp /usr/include/stdc-predef.h
+/usr/include/stdc-predef.h:
